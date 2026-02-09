@@ -3,7 +3,7 @@ pipeline {
 
   stages {
 
-    stage('Checkout') {
+    stage('Checkout Code') {
       steps {
         checkout scm
       }
@@ -15,18 +15,14 @@ pipeline {
       }
       steps {
         sh '''
-          rsync -av --delete \
-            $WORKSPACE/ \
-            /apps/acs/staging/simple-app.alvindocs.com/
-
-          cd /apps/acs/staging/simple-app.alvindocs.com
+          cd /apps/acs/staging/aplikasi.alvindocs.com
           docker compose down || true
           docker compose up -d --build
         '''
       }
     }
 
-    stage('Approval Production') {
+    stage('Approval PRODUCTION') {
       when {
         branch 'main'
       }
@@ -41,11 +37,7 @@ pipeline {
       }
       steps {
         sh '''
-          rsync -av --delete \
-            $WORKSPACE/ \
-            /apps/acs/production/simple-app.alvindocs.com/
-
-          cd /apps/acs/production/simple-app.alvindocs.com
+          cd /apps/acs/production/aplikasi.alvindocs.com
           docker compose -f docker-compose.production.yml down || true
           docker compose -f docker-compose.production.yml up -d --build
         '''
@@ -53,3 +45,4 @@ pipeline {
     }
   }
 }
+
