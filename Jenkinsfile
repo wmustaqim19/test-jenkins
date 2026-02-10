@@ -1,48 +1,39 @@
 pipeline {
   agent { label 'docker-apps2' }
 
+  environment {
+    APP_NAME = "acs-simple-app"
+  }
+
   stages {
-
-    stage('Checkout Code') {
+    stage('Build & Deploy') {
       steps {
-        checkout scm
-      }
-    }
+        script {
+          if (env.BRANCH_NAME == 'staging') {
+            sh """
+              docker build -t ${APP_NAME}:staging .
+              docker rm -f ${APP_NAME}-staging || true
+              docker run -d \
+                --name ${APP_NAME}-staging \
+                -p 8081:3000 \
+                -e NODE_ENV=staging \
+                ${APP_NAME}:staging
+            """
+          }
 
-    stage('Deploy STAGING') {
-      when {
-        branch 'staging'
-      }
-      steps {
-        sh '''
-          cd /apps/acs/staging/aplikasi.alvindocs.com
-          docker compose down || true
-          docker compose up -d --build
-        '''
-      }
-    }
-
-    stage('Approval PRODUCTION') {
-      when {
-        branch 'main'
-      }
-      steps {
-        input message: 'Deploy ke PRODUCTION?', ok: 'Deploy'
-      }
-    }
-
-    stage('Deploy PRODUCTION') {
-      when {
-        branch 'main'
-      }
-      steps {
-        sh '''
-          cd /apps/acs/production/aplikasi.alvindocs.com
-          docker compose -f docker-compose.production.yml down || true
-          docker compose -f docker-compose.production.yml up -d --build
-        '''
+          if (env.BRANCH_NAME == 'main') {
+            sh """
+              docker build -t ${APP_NAME}:prod .
+              docker rm -f ${APP_NAME}-prod || true
+              docker run -d \
+                --name ${APP_NAME}-prod \
+                -p 8080:3000 \
+                -e NODE_ENV=production \
+                ${APP_NAME}:prod
+            """
+          }
+        }
       }
     }
   }
 }
-
